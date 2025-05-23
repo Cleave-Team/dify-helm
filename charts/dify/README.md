@@ -109,3 +109,8 @@ externalRedis:
   useSSL: false
 ```
 Refer to `external<Service>` sections for more details. 
+
+## Troubleshooting
+- Check pod status: `kubectl get po -n <your-namespace>`
+- Inspect logs of a pod: `kubectl logs <pod-name> -n <your-namespace>`
+- Describe pod events: `kubectl describe po <pod-name> -n <your-namespace>`
