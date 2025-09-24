@@ -477,7 +477,7 @@ http {
     sendfile        on;
     #tcp_nopush     on;
 
-    keepalive_timeout  65;
+    keepalive_timeout  {{ .Values.proxy.keepaliveTimeout | default 65 }};
 
     #gzip  on;
     client_max_body_size {{ .Values.proxy.clientMaxBodySize | default "15m" }};
