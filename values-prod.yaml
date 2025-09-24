@@ -1,0 +1,221 @@
+# Production 환경용 values 파일 예시
+# argocd-application.yaml에서 valueFiles로 참조
+
+# Proxy 설정
+proxy:
+  enabled: true
+  replicas: 2
+  keepaliveTimeout: 180  # Production에서는 더 긴 timeout 설정
+  clientMaxBodySize: "100m"
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+
+# API 설정
+api:
+  enabled: true
+  replicas: 3
+  url:
+    consoleWeb: "https://dify.prod.example.com"
+    consoleApi: "https://dify.prod.example.com/console/api"
+    serviceApi: "https://dify.prod.example.com/api"
+    appWeb: "https://dify.prod.example.com"
+    appApi: "https://dify.prod.example.com/api"
+    files: "https://dify.prod.example.com/files"
+    marketplace: "https://marketplace.dify.ai"
+    marketplaceApi: "https://marketplace.dify.ai/api"
+
+  # Auto-scaling 설정
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+  resources:
+    limits:
+      cpu: 4000m
+      memory: 4Gi
+    requests:
+      cpu: 1000m
+      memory: 1Gi
+
+  # Persistence 설정
+  persistence:
+    enabled: true
+    size: 100Gi
+    storageClass: "fast-ssd"
+
+# Worker 설정
+worker:
+  enabled: true
+  replicas: 3
+  resources:
+    limits:
+      cpu: 4000m
+      memory: 4Gi
+    requests:
+      cpu: 1000m
+      memory: 1Gi
+
+# Web 설정
+web:
+  enabled: true
+  replicas: 3
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+
+# Sandbox 설정
+sandbox:
+  enabled: true
+  replicas: 2
+  persistence:
+    enabled: true
+    size: 50Gi
+    storageClass: "fast-ssd"
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+
+# SSRF Proxy 설정
+ssrfProxy:
+  enabled: true
+  replicas: 2
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Plugin Daemon 설정
+pluginDaemon:
+  enabled: true
+  replicas: 2
+  marketplace:
+    enabled: true
+    apiProxyEnabled: true
+  persistence:
+    enabled: true
+    size: 50Gi
+    storageClass: "fast-ssd"
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+
+# 외부 PostgreSQL (RDS 등) 사용
+externalPostgres:
+  enabled: true
+  address: "dify-prod.cluster-xxxxx.us-west-2.rds.amazonaws.com"
+  port: 5432
+  database:
+    api: "dify_prod"
+    pluginDaemon: "dify_plugin_prod"
+  username: "dify_prod_user"
+  # password는 ArgoCD Secret으로 관리
+
+# 내장 PostgreSQL 비활성화
+postgresql:
+  enabled: false
+
+# 외부 Redis (ElastiCache 등) 사용
+externalRedis:
+  enabled: true
+  host: "dify-prod.xxxxx.cache.amazonaws.com"
+  port: 6379
+  useSSL: true
+  # password는 ArgoCD Secret으로 관리
+
+# 내장 Redis 비활성화
+redis:
+  enabled: false
+
+# S3 스토리지 설정
+externalS3:
+  enabled: true
+  endpoint: "https://s3.us-west-2.amazonaws.com"
+  bucketName:
+    api: "dify-prod-files"
+    pluginDaemon: "dify-prod-plugins"
+  region: "us-west-2"
+  useIAM: true  # IAM Role 사용
+
+# Vector DB 설정 (Weaviate)
+externalWeaviate:
+  enabled: true
+  endpoint: "https://weaviate-prod.example.com"
+  # apiKey는 ArgoCD Secret으로 관리
+
+# Ingress 설정
+ingress:
+  enabled: true
+  className: alb
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:us-west-2:123456789012:certificate/xxxxx"
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: "30"
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: "5"
+    alb.ingress.kubernetes.io/healthy-threshold-count: "2"
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: "2"
+  hosts:
+    - host: dify.prod.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: dify-prod-tls
+      hosts:
+        - dify.prod.example.com
+
+# Node Selector (특정 노드 그룹에 배포)
+api:
+  nodeSelector:
+    node-role: compute-optimized
+  tolerations:
+    - key: "compute-optimized"
+      operator: "Equal"
+      value: "true"
+      effect: "NoSchedule"
+
+worker:
+  nodeSelector:
+    node-role: compute-optimized
+  tolerations:
+    - key: "compute-optimized"
+      operator: "Equal"
+      value: "true"
+      effect: "NoSchedule"
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+# Service Monitor (Prometheus)
+serviceMonitor:
+  enabled: true
+  interval: 30s
+  scrapeTimeout: 10s

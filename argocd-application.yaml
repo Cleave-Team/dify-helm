@@ -1,0 +1,183 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: dify
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/cspark/dify-helm  # Fork한 저장소 URL로 변경하세요
+    targetRevision: master  # 또는 원하는 브랜치/태그
+    path: charts/dify
+    helm:
+      releaseName: dify
+      values: |
+        # Proxy 설정
+        proxy:
+          enabled: true
+          replicas: 1
+          keepaliveTimeout: 120  # 커스텀 keepalive timeout 설정
+          clientMaxBodySize: "50m"
+
+        # API 설정
+        api:
+          enabled: true
+          replicas: 2
+          url:
+            consoleWeb: "https://dify.example.com"
+            consoleApi: "https://dify.example.com/console/api"
+            serviceApi: "https://dify.example.com/api"
+            appWeb: "https://dify.example.com"
+            appApi: "https://dify.example.com/api"
+            files: "https://dify.example.com/files"
+            marketplace: "https://marketplace.dify.ai"
+            marketplaceApi: "https://marketplace.dify.ai/api"
+
+          # 데이터베이스 인증 정보는 Secret으로 관리하는 것을 권장
+          # secretKey: "your-secret-key-here"
+
+        # Worker 설정
+        worker:
+          enabled: true
+          replicas: 1
+
+        # Web 설정
+        web:
+          enabled: true
+          replicas: 2
+
+        # Sandbox 설정
+        sandbox:
+          enabled: true
+          replicas: 1
+
+        # SSRF Proxy 설정
+        ssrfProxy:
+          enabled: true
+
+        # Plugin Daemon 설정
+        pluginDaemon:
+          enabled: false  # 필요시 활성화
+
+        # 외부 PostgreSQL 사용 예시
+        externalPostgres:
+          enabled: true
+          address: "postgres.example.com"
+          port: 5432
+          database:
+            api: "dify"
+            pluginDaemon: "dify_plugin"
+          username: "dify_user"
+          # password는 Secret으로 관리
+
+        # 내장 PostgreSQL 비활성화
+        postgresql:
+          enabled: false
+
+        # 외부 Redis 사용 예시
+        externalRedis:
+          enabled: true
+          host: "redis.example.com"
+          port: 6379
+          useSSL: false
+          # username: ""
+          # password는 Secret으로 관리
+
+        # 내장 Redis 비활성화
+        redis:
+          enabled: false
+
+        # S3 스토리지 설정 예시
+        externalS3:
+          enabled: true
+          endpoint: "https://s3.amazonaws.com"
+          bucketName:
+            api: "dify-files"
+            pluginDaemon: "dify-plugins"
+          region: "us-west-2"
+          useIAM: false
+          # accessKey와 secretKey는 Secret으로 관리
+
+        # Vector DB 설정 (예: Weaviate)
+        externalWeaviate:
+          enabled: true
+          endpoint: "http://weaviate.example.com:8080"
+          # apiKey는 Secret으로 관리
+
+        # Ingress 설정
+        ingress:
+          enabled: true
+          className: nginx
+          annotations:
+            cert-manager.io/cluster-issuer: "letsencrypt-prod"
+            nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+          hosts:
+            - host: dify.example.com
+              paths:
+                - path: /
+                  pathType: Prefix
+          tls:
+            - secretName: dify-tls
+              hosts:
+                - dify.example.com
+
+        # 리소스 제한 설정
+        # api:
+        #   resources:
+        #     limits:
+        #       cpu: 2000m
+        #       memory: 2Gi
+        #     requests:
+        #       cpu: 500m
+        #       memory: 512Mi
+
+        # worker:
+        #   resources:
+        #     limits:
+        #       cpu: 2000m
+        #       memory: 2Gi
+        #     requests:
+        #       cpu: 500m
+        #       memory: 512Mi
+
+        # web:
+        #   resources:
+        #     limits:
+        #       cpu: 500m
+        #       memory: 512Mi
+        #     requests:
+        #       cpu: 100m
+        #       memory: 128Mi
+
+        # proxy:
+        #   resources:
+        #     limits:
+        #       cpu: 500m
+        #       memory: 512Mi
+        #     requests:
+        #       cpu: 100m
+        #       memory: 128Mi
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dify
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+  revisionHistoryLimit: 3
