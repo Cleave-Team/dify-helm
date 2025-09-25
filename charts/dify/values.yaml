@@ -811,6 +811,9 @@ postgresql:
       requests: {}
     persistence:
       enabled: true
+      ## @param primary.persistence.existingClaim Name of an existing PVC to use
+      ##
+      existingClaim: ""
       storageClass: ""
       accessModes:
         - ReadWriteOnce
@@ -837,6 +840,9 @@ postgresql:
       requests: {}
     persistence:
       enabled: true
+      ## @param readReplicas.persistence.existingClaim Name of an existing PVC to use
+      ##
+      existingClaim: ""
       storageClass: ""
       accessModes:
         - ReadWriteOnce
