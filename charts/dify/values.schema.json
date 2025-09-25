@@ -301,6 +301,7 @@
         "customReadinessProbe": { "type": "object" },
         "customStartupProbe": { "type": "object" },
         "clientMaxBodySize": { "type": "string" },
+        "keepaliveTimeout": { "type": "integer" },
         "updateStrategy": { "type": "object" },
         "podSecurityContext": { "type": "object" },
         "containerSecurityContext": { "type": "object" },
